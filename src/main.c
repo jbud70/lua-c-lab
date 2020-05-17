@@ -12,8 +12,13 @@ void lua_dofile(void)
 
     lua_State *L = luaL_newstate(); // Create a new Lua state
 
-    luaL_openlibs(L);                          // Import Lua std libs for the active state
-    luaL_dofile(L, "./scripts/factorial.lua"); // Open lua file and execute it
+    luaL_openlibs(L); // Import Lua std libs for the active state
+
+    // Open lua file and execute it (with error checking)
+    if (luaL_dofile(L, "./scripts/factorial.lua") != LUA_OK)
+    {
+        luaL_error(L, "!!! Lua Error: %s\n", lua_tostring(L, -1));
+    }
 
     lua_close(L); // Always close your Lua state when finished
 }
@@ -89,7 +94,11 @@ void lua_call_func(void)
     int stack_count = 0;
 
     luaL_requiref(L, LUA_MATHLIBNAME, luaopen_math, 1); // Import only math lib, as opposed to all libs as above
-    luaL_dofile(L, "./scripts/pythagoras.lua");
+
+    if (luaL_dofile(L, "./scripts/pythagoras.lua") != LUA_OK)
+    {
+        luaL_error(L, "!!! Lua Error: %s\n", lua_tostring(L, -1));
+    }
 
     lua_getglobal(L, "pythagoras"); // Place function on stack
 
@@ -99,11 +108,17 @@ void lua_call_func(void)
         lua_pushnumber(L, 47); // Push second arg to stack, y
         stack_count = lua_gettop(L);
         printf("The stack count before function call: %i\n", stack_count);
-        lua_pcall(L, 2, 1, 0);                   // (LuaState, num of args, num of returns, error), this pops off args from stack
-        lua_Number result = lua_tonumber(L, -1); // Get return from lua stack
-        stack_count = lua_gettop(L);
-        printf("The stack count after function call: %i\n", stack_count);
-        printf("The return from the pythagoras func call is %f\n", (float)result);
+        if (lua_pcall(L, 2, 1, 0) != LUA_OK) // (LuaState, num of args, num of returns, error), this pops off args from stack
+        {
+            luaL_error(L, "!!! Lua Error: %s\n", lua_tostring(L, -1));
+        }
+        else
+        {
+            lua_Number result = lua_tonumber(L, -1); // Get return from lua stack
+            stack_count = lua_gettop(L);
+            printf("The stack count after function call: %i\n", stack_count);
+            printf("The return from the pythagoras func call is %f\n", (float)result);
+        }
     }
     else
     {
